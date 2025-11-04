@@ -80,3 +80,12 @@ Sau đó chờ tải cấu hình về
 <img width="1686" height="975" alt="Ảnh chụp màn hình 2025-11-04 105611" src="https://github.com/user-attachments/assets/41a78912-b643-447d-a868-1cec6c15f9b2" />
 
 <img width="1683" height="977" alt="Ảnh chụp màn hình 2025-11-04 110416" src="https://github.com/user-attachments/assets/3defb4f2-e305-41af-a83d-e0520c1ea635" />
+
+4. Bước 4: Cài đặt hoàn tất Ubuntu và đăng nhập
+<img width="1686" height="975" alt="Ảnh chụp màn hình 2025-11-04 115456" src="https://github.com/user-attachments/assets/1bbd26b1-c526-4a40-a271-668e4b59501e" />
+
+Dùng mật khẩu mà ta đã tạo ở bước trước đó để đăng nhập vào
+<img width="1683" height="956" alt="Ảnh chụp màn hình 2025-11-04 115822" src="https://github.com/user-attachments/assets/8d79a1da-e64a-4092-874b-d86a4a81ff4a" />
+
+Đăng nhập thành công
+<img width="1686" height="961" alt="Ảnh chụp màn hình 2025-11-04 115941" src="https://github.com/user-attachments/assets/d898c4dc-6289-4385-8869-c9e234c6571f" />
