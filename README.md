@@ -38,3 +38,45 @@
  - Cấu hình nginx để chạy được website qua url http://fullname.com  (thay fullname bằng chuỗi ko dấu viết liền tên của bạn)
  - Cấu hình nginx để http://fullname.com/nodered truy cập vào nodered qua cổng 80, (dù nodered đang chạy ở port 1880)
  - Cấu hình nginx để http://fullname.com/grafana truy cập vào grafana qua cổng 80, (dù grafana đang chạy ở port 3000)
+
+## Cài đặt môi trường
+### 1. Sử dụng VMware: cài đặt ubuntu
+1. Bước 1: Đăng nhập vào trang ubuntu.com để tải Ubuntu 24.04.3 LTS về
+<img width="1917" height="989" alt="Ảnh chụp màn hình 2025-11-04 095831" src="https://github.com/user-attachments/assets/818c4dd2-eff4-43fb-858d-a8f7182e9f9b" />
+
+<img width="1917" height="984" alt="Ảnh chụp màn hình 2025-11-04 095856" src="https://github.com/user-attachments/assets/1b7a148b-2e1f-44f6-a346-83e56683f0d0" />
+
+<img width="942" height="70" alt="Ảnh chụp màn hình 2025-11-04 103216" src="https://github.com/user-attachments/assets/75271e3e-aaa8-4444-a571-957936c7303c" />
+
+2. Bước 2: Tạo máy ảo trên VMware
+<img width="432" height="433" alt="Ảnh chụp màn hình 2025-11-04 103308" src="https://github.com/user-attachments/assets/02df4c1f-f030-47a6-bc3c-cc4dea8bcb31" />
+
+<img width="429" height="426" alt="Ảnh chụp màn hình 2025-11-04 103407" src="https://github.com/user-attachments/assets/d4e65e7e-e384-4012-abba-cd1c8f0e9ef6" />
+
+<img width="433" height="433" alt="Ảnh chụp màn hình 2025-11-04 103439" src="https://github.com/user-attachments/assets/37344a43-af0e-47a2-b8d6-c6cf6ffdb1f4" />
+
+<img width="432" height="432" alt="Ảnh chụp màn hình 2025-11-04 103739" src="https://github.com/user-attachments/assets/24110c0b-dc5f-4d65-aaab-6720f1903e91" />
+
+<img width="427" height="432" alt="Ảnh chụp màn hình 2025-11-04 103936" src="https://github.com/user-attachments/assets/947b4b1e-43c6-4e76-8192-ba2a66db673c" />
+
+<img width="431" height="431" alt="Ảnh chụp màn hình 2025-11-04 103950" src="https://github.com/user-attachments/assets/1fd949fc-84f6-4ec9-931d-2db6447c4b5d" />
+
+Sau khi cài xong ta sẽ thấy hiển thị VM_Ubuntu bên trái màn hình và ta mở lên
+<img width="1919" height="1033" alt="Ảnh chụp màn hình 2025-11-04 104004" src="https://github.com/user-attachments/assets/e4e8bc50-b09e-40e0-90b6-61440a3c40ff" /Ta 
+
+Ta click chuột 2 lần vào edit virtual machine settings để chỉnh sửa thiết lập máy ảo
+<img width="1684" height="975" alt="Ảnh chụp màn hình 2025-11-04 104213" src="https://github.com/user-attachments/assets/606cb427-fa36-494b-a285-7d1d3cd5b3bc" />
+
+3. Bước 3: Cầu hình cho Ubuntu
+<img width="1684" height="981" alt="Ảnh chụp màn hình 2025-11-04 104539" src="https://github.com/user-attachments/assets/ebcfea6b-8f01-4514-a9c7-afdd5220f170" />
+
+Ta sẽ bấm next cho tới khi tới create your account để tạo tài khoản -> next
+<img width="1684" height="976" alt="Ảnh chụp màn hình 2025-11-04 105446" src="https://github.com/user-attachments/assets/61d0a76a-6178-43c1-9f02-848ea33daac8" />
+
+Tìm đến địa chỉ mình đang ở rồi chỉnh sửa -> next 
+<img width="1683" height="978" alt="Ảnh chụp màn hình 2025-11-04 105556" src="https://github.com/user-attachments/assets/e43a4eca-f09d-47af-89a9-50bbc2652eec" />
+
+Sau đó chờ tải cấu hình về
+<img width="1686" height="975" alt="Ảnh chụp màn hình 2025-11-04 105611" src="https://github.com/user-attachments/assets/41a78912-b643-447d-a868-1cec6c15f9b2" />
+
+<img width="1683" height="977" alt="Ảnh chụp màn hình 2025-11-04 110416" src="https://github.com/user-attachments/assets/3defb4f2-e305-41af-a83d-e0520c1ea635" />
