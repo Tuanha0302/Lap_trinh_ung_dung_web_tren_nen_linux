@@ -89,3 +89,125 @@ Dùng mật khẩu mà ta đã tạo ở bước trước đó để đăng nh�
 
 Đăng nhập thành công
 <img width="1686" height="961" alt="Ảnh chụp màn hình 2025-11-04 115941" src="https://github.com/user-attachments/assets/d898c4dc-6289-4385-8869-c9e234c6571f" />
+
+### 2. Cài đặt Docker
+1. Bước 1: Cài đặt Docker và Docker Compose
+- Mở terminal để chạy các dòng lệnh sau
+```
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg lsb-release
+```
+2. Bước 2: Thêm repo và cài Docker
+```
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+3. Bước 3: Cho phép chạy Docker không cần sudo
+```
+sudo usermod -aG docker $USER
+newgrp docker
+```
+  - Sau lệnh này, nếu thấy lỗi "permission denied", hãy logout/login lại máy ảo
+4. Bước 4: Kiểm tra Docker
+```
+docker --version
+ docker compose version
+ docker run hello-world
+```
+
+<img width="1682" height="965" alt="Ảnh chụp màn hình 2025-11-04 122949" src="https://github.com/user-attachments/assets/2e3157ec-5c47-4058-91ae-6a24b5377ab8" />
+
+### 3. Tạo file docker-compose.yml
+1. Bước 1: Tạo thư mục làm việc
+```
+mkdir ~/do_an_web
+cd ~/do_an_web
+```
+2. Bước 2: Tạo file compose:
+```
+nano docker-compose.yml
+```
+```
+version: "3.8"
+
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: iotdb
+      MYSQL_USER: iotuser
+      MYSQL_PASSWORD: iotpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    restart: always
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: iotuser
+      PMA_PASSWORD: iotpass
+    ports:
+      - "8080:80"
+    depends_on:
+      - mariadb
+    restart: always
+
+  nodered:
+    image: nodered/node-red
+    container_name: nodered
+    ports:
+      - "1880:1880"
+    volumes:
+      - nodered_data:/data
+    restart: always
+
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/html:/usr/share/nginx/html
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    restart: always
+
+volumes:
+  mariadb_data:
+  nodered_data:
+  influxdb_data:
+  grafana_data:
+```
