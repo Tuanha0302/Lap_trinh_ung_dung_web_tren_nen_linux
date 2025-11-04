@@ -211,3 +211,33 @@ volumes:
   influxdb_data:
   grafana_data:
 ```
+Để lưu lại ta ấn Ctrl+O, Enter, Ctrl+X.
+
+3. Bước 3: chạy stack
+```
+docker compose up -d
+```
+
+<img width="1684" height="974" alt="Ảnh chụp màn hình 2025-11-04 125152" src="https://github.com/user-attachments/assets/c5305c57-1eef-44b1-8a1f-91743228507a" />
+
+4. Bước 4: Xem tình trạng
+```
+docker ps
+```
+
+<img width="1686" height="943" alt="image" src="https://github.com/user-attachments/assets/c1d5c60a-de6e-46e2-8c4c-c3581749d13f" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
