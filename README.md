@@ -65,6 +65,7 @@ Sau khi cài xong ta sẽ thấy hiển thị VM_Ubuntu bên trái màn hình v�
 <img width="1919" height="1033" alt="Ảnh chụp màn hình 2025-11-04 104004" src="https://github.com/user-attachments/assets/e4e8bc50-b09e-40e0-90b6-61440a3c40ff" /Ta 
 
 Ta click chuột 2 lần vào edit virtual machine settings để chỉnh sửa thiết lập máy ảo
+
 <img width="1684" height="975" alt="Ảnh chụp màn hình 2025-11-04 104213" src="https://github.com/user-attachments/assets/606cb427-fa36-494b-a285-7d1d3cd5b3bc" />
 
 3. Bước 3: Cầu hình cho Ubuntu
