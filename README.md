@@ -139,73 +139,78 @@ cd ~/do_an_web
 nano docker-compose.yml
 ```
 ```
-version: "3.8"
+version: '3.9'
 
 services:
   mariadb:
     image: mariadb:latest
     container_name: mariadb
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: iotdb
-      MYSQL_USER: iotuser
-      MYSQL_PASSWORD: iotpass
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: banhang
+      MYSQL_USER: ha
+      MYSQL_PASSWORD: 123456
     volumes:
       - mariadb_data:/var/lib/mysql
-    restart: always
+    ports:
+      - "3306:3306"
 
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
     container_name: phpmyadmin
-    environment:
-      PMA_HOST: mariadb
-      PMA_USER: iotuser
-      PMA_PASSWORD: iotpass
-    ports:
-      - "8080:80"
+    restart: always
     depends_on:
       - mariadb
-    restart: always
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: ha
+      PMA_PASSWORD: 123456
+    ports:
+      - "8080:80"
 
   nodered:
-    image: nodered/node-red
+    image: nodered/node-red:latest
     container_name: nodered
+    restart: always
     ports:
       - "1880:1880"
     volumes:
       - nodered_data:/data
-    restart: always
 
   influxdb:
     image: influxdb:latest
     container_name: influxdb
+    restart: always
     ports:
       - "8086:8086"
     volumes:
       - influxdb_data:/var/lib/influxdb
-    restart: always
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:latest
     container_name: grafana
+    restart: always
+    depends_on:
+      - influxdb
     ports:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
-    restart: always
 
   nginx:
     image: nginx:latest
     container_name: nginx
+    restart: always
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/html:/usr/share/nginx/html
       - ./nginx/conf.d:/etc/nginx/conf.d
-    restart: always
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - nodered
+      - grafana
 
 volumes:
   mariadb_data:
@@ -229,10 +234,109 @@ docker ps
 
 <img width="1686" height="943" alt="image" src="https://github.com/user-attachments/assets/c1d5c60a-de6e-46e2-8c4c-c3581749d13f" />
 
+### 4. Cấu hình nginx
+File nginx/default.conf:
+```
+server {
+    listen 80;
+    server_name nguydinhtuanha.com www.nguydinhtuanha.com;
 
+    # === Gốc: SPA Frontend ===
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
 
+        # Cache static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+    }
 
+    # === API Backend (Node-RED) ===
+    location /api/ {
+        proxy_pass http://nodered:1880/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
+    # === API User Orders (Node-RED) ===
+    location /user/ {
+        proxy_pass http://nodered:1880/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # === Node-RED UI (Subpath) ===
+    location ^~ /nodered/ {
+        proxy_pass http://nodered:1880/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Fix tài nguyên tĩnh (CSS/JS) cho subpath
+        sub_filter_once off;
+        sub_filter 'href="/'  'href="/nodered/';
+        sub_filter 'src="/'   'src="/nodered/';
+        sub_filter 'action="/' 'action="/nodered/';
+        sub_filter_types text/css text/javascript text/xml application/javascript;
+        proxy_set_header Accept-Encoding "";
+    }
+
+    # === Grafana (Subpath) ===
+    location /grafana/ {
+        proxy_pass http://grafana:3000/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto http;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # Fix redirects từ Grafana
+        proxy_redirect http://grafana:3000/ /grafana/;
+        proxy_redirect / /grafana/;
+        
+        # CHỈ thay thế trong HTML (KHÔNG làm hỏng JS/CSS)
+        sub_filter_once off;
+        sub_filter_types text/html;
+        sub_filter 'href="/' 'href="/grafana/';
+        sub_filter 'src="/' 'src="/grafana/';
+        sub_filter 'href="public/' 'href="/grafana/public/';
+        sub_filter 'src="public/' 'src="/grafana/public/';
+        
+        proxy_set_header Accept-Encoding "";
+    }
+
+    # === Bảo mật Header ===
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # === 404 Fallback cho SPA ===
+    error_page 404 /index.html;
+}
+```
+<img width="1915" height="979" alt="Ảnh chụp màn hình 2025-11-05 204301" src="https://github.com/user-attachments/assets/faaafddf-f36c-4311-b889-6b876482f9be" />
+
+<img width="1919" height="979" alt="Ảnh chụp màn hình 2025-11-05 204148" src="https://github.com/user-attachments/assets/aa19f19c-e9fc-4b51-ab56-ee192db78bfd" />
+
+Website chính: 👉 http://nguydinhtuanha.com
+Node-RED: 👉 http://nguydinhtuanha.com/nodered
+Grafana: 👉 http://nguydinhtuanha.com/grafana
 
 
 
