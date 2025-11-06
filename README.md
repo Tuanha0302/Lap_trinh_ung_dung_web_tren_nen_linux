@@ -388,3 +388,26 @@ Danh sách bảng và vai trò
 - Quan hệ:
   - Có thể được tạo bởi PHP (khi người dùng đăng nhập sai, lỗi DB...) hoặc Node-RED (khi ghi dữ liệu cảm biến, gặp lỗi kết nối...)
   - Dữ liệu log có thể được admin xem để chẩn đoán sự cố hệ thống
+
+### 6. Node-red backend
+1. Thu thập dữ liệu
+- chức năng: Giả lập cảm biến, ghi DB
+
+<img width="1240" height="176" alt="image" src="https://github.com/user-attachments/assets/7e0cd24f-8d9b-4443-93a8-571652730bce" />
+
+2. Đăng nhập
+- Chức năng: Xác thực người dùng
+  
+<img width="1176" height="96" alt="image" src="https://github.com/user-attachments/assets/0dc1b6ea-7407-44ec-97f8-a3fd7060146c" />
+
+
+3. Cung cấp API
+- Chức năng: Trả dữ liệu mới nhất
+
+<img width="1062" height="187" alt="image" src="https://github.com/user-attachments/assets/dfa65ab9-227d-4e29-9641-bf2f93558916" />
+
+### 7. Fontend
+<img width="1873" height="921" alt="image" src="https://github.com/user-attachments/assets/06076c1c-d113-4659-9c34-5c2c0cf1e9c4" />
+
+<img width="1913" height="980" alt="image" src="https://github.com/user-attachments/assets/d2bbcd07-28d9-4cfe-bb3a-e8744ee2097f" />
+
