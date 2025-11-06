@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Web IOT — Giám sát</title>
+  <meta name="description" content="Single-file SPA cho giám sát IoT (MariaDB + Node-RED + InfluxDB + Grafana)" />
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--muted:#6b7280;--accent:#0b69ff}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;background:var(--bg);color:#0b1220}
+    header{background:#071132;color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+    .container{max-width:1100px;margin:20px auto;padding:0 16px}
+    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 8px 24px rgba(2,6,23,0.06);margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    input,select,button{font-size:14px;padding:8px;border-radius:8px;border:1px solid #e6eef7}
+    button{cursor:pointer;border:0}
+    .btn-primary{background:var(--accent);color:#fff;padding:8px 12px}
+    .small{font-size:13px;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .sensor-card{padding:12px;border-radius:10px;background:linear-gradient(180deg,#fff,#fbfdff);cursor:pointer}
+    .sensor-name{font-weight:600;margin-bottom:6px}
+    .sensor-value{font-size:20px;font-weight:700}
+    footer{padding:10px;text-align:center;color:var(--muted);font-size:13px}
+    .center{display:flex;align-items:center;gap:8px}
+    .hidden{display:none}
+    iframe{width:100%;height:520px;border:0;border-radius:8px}
+    @media (max-width:600px){ iframe{height:360px} }
+  </style>
+</head>
+<body>
+  <header>
+    <div><strong>Web IOT</strong> <span class="small">· Giám sát thời gian thực</span></div>
+    <div id="hdrActions" class="center"></div>
+  </header>
+
+  <main class="container">
+    <!-- Login card -->
+    <div id="loginCard" class="card" style="max-width:520px;margin:28px auto;">
+      <h3>Đăng nhập</h3>
+      <div style="display:grid;gap:10px;margin-top:10px">
+        <input id="username" placeholder="Tên đăng nhập" autocomplete="username" />
+        <input id="password" type="password" placeholder="Mật khẩu" autocomplete="current-password" />
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button id="btnLogin" class="btn-primary">Đăng nhập</button>
+        </div>
+        <div id="loginMsg" class="muted small"></div>
+        <div class="small muted">Mật khẩu được băm SHA-256 trên client trước khi gửi. Luôn chạy qua HTTPS.</div>
+      </div>
+    </div>
+
+    <!-- App -->
+    <div id="app" class="hidden">
+      <div class="card">
+        <h3>Giá trị mới nhất</h3>
+        <div id="sensors" class="grid" style="margin-top:12px"></div>
+        <div id="noSensors" class="muted small hidden" style="margin-top:10px">Chưa có cảm biến nào.</div>
+      </div>
+
+      <div id="grafanaCard" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h3 style="margin:0">Biểu đồ lịch sử — <span id="grafanaSensorName"></span></h3>
+            <div class="small muted">Nguồn: Grafana (iframe)</div>
+          </div>
+          <div>
+            <button id="closeGrafana" style="margin-right:8px">Đóng</button>
+          </div>
+        </div>
+        <div id="grafanaWrapper" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card">
+        <h3>Cấu hình</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="grafanaUrl" placeholder="Grafana dashboard iframe URL (ví dụ https://grafana.example/d/abc/mydash?orgId=1&panelId=2)" style="flex:1;min-width:250px" />
+          <button id="saveGrafana" class="btn-primary">Lưu</button>
+        </div>
+        <div class="small muted" style="margin-top:8px">Lưu URL vào localStorage; phải bật cho phép iframe trong Grafana (GF_SECURITY_ALLOW_EMBEDDING).</div>
+      </div>
+    </div>
+  </main>
+
+  <footer>© Web IOT — Node-RED + MariaDB + InfluxDB + Grafana</footer>
+
+<script>
+/* ================== SETTINGS ================== */
+const API_BASE = '/api'; // server endpoints prefix
+const POLL_INTERVAL_MS = 6000; // poll every 6s
+
+/* ================== HELPERS ================== */
+function el(id){ return document.getElementById(id) }
+function setHTML(id, html){ el(id).innerHTML = html }
+function setText(id, txt){ el(id).innerText = txt }
+
+/* SHA-256 hex on client */
+async function sha256hex(str){
+  const enc = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  const arr = Array.from(new Uint8Array(buf));
+  return arr.map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+/* escape for minimal XSS safety in rendering */
+function esc(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+/* fetch JSON with credentials */
+async function fetchJSON(url, opts = {}){
+  const o = Object.assign({}, opts);
+  o.credentials = 'include';
+  if(o.body && typeof o.body === 'object' && !(o.body instanceof FormData)) {
+    o.headers = Object.assign({'Content-Type':'application/json'}, o.headers || {});
+    o.body = JSON.stringify(o.body);
+  }
+  const res = await fetch(url, o);
+  const txt = await res.text();
+  try { return { ok: true, status: res.status, json: JSON.parse(txt) }; } catch(e){ return { ok: false, status: res.status, text: txt }; }
+}
+
+/* ================== UI ELEMENTS ================== */
+const loginCard = el('loginCard');
+const app = el('app');
+const sensorsDiv = el('sensors');
+const noSensors = el('noSensors');
+const loginMsg = el('loginMsg');
+const hdrActions = el('hdrActions');
+const grafanaCard = el('grafanaCard');
+const grafanaWrapper = el('grafanaWrapper');
+const grafanaSensorName = el('grafanaSensorName');
+
+/* ================== AUTH FLOW ================== */
+async function checkSession(){
+  const r = await fetchJSON(API_BASE + '/verify_session.php', {method:'GET'});
+  if(r.ok && r.json && r.json.ok) return true;
+  return false;
+}
+
+async function showLogin(){
+  loginCard.style.display = 'block';
+  app.classList.add('hidden');
+  hdrActions.innerHTML = '';
+}
+
+async function showApp(){
+  loginCard.style.display = 'none';
+  app.classList.remove('hidden');
+  hdrActions.innerHTML = '<button id="btnLogout">Đăng xuất</button>';
+  el('btnLogout').addEventListener('click', async ()=> {
+    await fetchJSON(API_BASE + '/logout.php', {method:'POST'});
+    await init();
+  });
+  loadLatest(); // immediate
+}
+
+/* ================== LOGIN HANDLER ================== */
+el('btnLogin').addEventListener('click', async ()=>{
+  loginMsg.innerText = '';
+  const username = el('username').value.trim();
+  const password = el('password').value;
+  if(!username || !password){ loginMsg.innerText = 'Vui lòng nhập tên & mật khẩu'; return; }
+  loginMsg.innerText = 'Đang đăng nhập...';
+  try{
+    const ph = await sha256hex(password);
+    const r = await fetchJSON(API_BASE + '/login.php', { method:'POST', body: { username, password_hash: ph } });
+    if(r.ok && r.json && r.json.ok){
+      loginMsg.innerText = 'Đăng nhập thành công';
+      setTimeout(()=>showApp(), 300);
+    } else {
+      loginMsg.innerText = (r.json && r.json.error) ? r.json.error : ('Lỗi: ' + (r.text||'Không xác định'));
+    }
+  } catch(e){
+    loginMsg.innerText = 'Lỗi: ' + e.message;
+  }
+});
+
+/* ================== LATEST SENSOR LOAD & RENDER ================== */
+let latestCache = []; // array of {sensor_id, name, value, unit, ts}
+
+async function loadLatest(){
+  const r = await fetchJSON(API_BASE + '/latest.php', {method:'GET'});
+  if(!(r.ok && r.json && r.json.ok)){
+    sensorsDiv.innerHTML = '<div class="muted">Không lấy được dữ liệu. Hãy kiểm tra backend.</div>';
+    return;
+  }
+  const data = r.json.data || [];
+  latestCache = data;
+  renderSensors(data);
+}
+
+function renderSensors(list){
+  sensorsDiv.innerHTML = '';
+  if(!list || list.length === 0){
+    noSensors.classList.remove('hidden');
+    return;
+  }
+  noSensors.classList.add('hidden');
+  for(const s of list){
+    const wrapper = document.createElement('div');
+    wrapper.className = 'sensor-card card';
+    wrapper.style.minHeight = '86px';
+    const name = esc(s.name || ('sensor-'+(s.sensor_id||s.id||'')));
+    const val = (s.value===null || s.value===undefined) ? '-' : esc(String(s.value));
+    const unit = esc(s.unit||'');
+    const ts = s.ts ? new Date(s.ts*1000).toLocaleString() : (s.updated_at ? new Date(s.updated_at).toLocaleString() : '');
+    wrapper.innerHTML = `
+      <div class="sensor-name">${name}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><span class="sensor-value">${val}</span> <span class="small muted">${unit}</span></div>
+        <div class="small muted">${ts}</div>
+      </div>
+    `;
+    wrapper.addEventListener('click', ()=> openGrafana(s));
+    sensorsDiv.appendChild(wrapper);
+  }
+}
+
+/* auto-poll */
+setInterval(()=>{ if(!app.classList.contains('hidden')) loadLatest(); }, POLL_INTERVAL_MS);
+
+/* ================== GRAFANA IFRAME ================== */
+function openGrafana(sensor){
+  const urlBase = localStorage.getItem('grafana_url') || '';
+  if(!urlBase){ alert('Chưa cấu hình Grafana URL trong Cấu hình.'); return; }
+  // append variable sensor id (many Grafana dashboard accept var-sensor; adapt as needed)
+  const sep = urlBase.includes('?') ? '&' : '?';
+  const param = `var-sensor=${encodeURIComponent(sensor.sensor_id || sensor.id || sensor.sensor)}`;
+  const full = urlBase + sep + param;
+  grafanaSensorName.textContent = sensor.name || (sensor.sensor_id || sensor.id);
+  grafanaWrapper.innerHTML = `<iframe src="${esc(full)}" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>`;
+  grafanaCard.classList.remove('hidden');
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+}
+el('closeGrafana').addEventListener('click', ()=>{ grafanaWrapper.innerHTML=''; grafanaCard.classList.add('hidden'); });
+
+el('saveGrafana').addEventListener('click', ()=>{
+  const v = el('grafanaUrl').value.trim();
+  if(!v){ alert('Nhập Grafana dashboard URL'); return; }
+  localStorage.setItem('grafana_url', v);
+  alert('Đã lưu Grafana URL');
+});
+
+/* ================== INIT ================== */
+async function init(){
+  try{
+    const ok = await checkSession();
+    if(ok) showApp(); else showLogin();
+    // prefill grafana input from storage
+    const g = localStorage.getItem('grafana_url') || '';
+    el('grafanaUrl').value = g;
+  } catch(e){
+    console.error(e);
+    showLogin();
+  }
+}
+init();
+
+</script>
+</body>
+</html>
