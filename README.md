@@ -330,7 +330,7 @@ server {
     error_page 404 /index.html;
 }
 ```
-<img width="1915" height="979" alt="Ảnh chụp màn hình 2025-11-05 204301" src="https://github.com/user-attachments/assets/faaafddf-f36c-4311-b889-6b876482f9be" />
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/b7cf02ba-9c1c-4f38-9125-007c89e5cf4a" />
 
 <img width="1919" height="979" alt="Ảnh chụp màn hình 2025-11-05 204148" src="https://github.com/user-attachments/assets/aa19f19c-e9fc-4b51-ab56-ee192db78bfd" />
 
@@ -338,12 +338,53 @@ server {
 ##### Node-RED: 👉 http://nguydinhtuanha.com/nodered
 ##### Grafana: 👉 http://nguydinhtuanha.com/grafana
 
+### 5. Mariadb
+<img width="1876" height="950" alt="image" src="https://github.com/user-attachments/assets/a908b8f2-4ac3-440a-add0-2878904258ee" />
 
-
-
-
-
-
-
-
-
+Danh sách bảng và vai trò
+1. Users (Người dùng)
+- Vai trò: Lưu thông tin tài khoản đăng nhập của người dùng hệ thống (bao gồm cả admin và người dùng giám sát IoT).
+- Các cột chính:
+  - username: Tên đăng nhập duy nhất của người dùng
+  - password_hash: Mật khẩu đã được mã hóa bằng bcrypt, đảm bảo an toàn
+  - fullname: Họ và tên đầy đủ của người dùng.
+  - email: Địa chỉ email của người dùng.
+  - created_at: Thời điểm tạo tài khoản.
+- Quan hệ:
+  - Người dùng có thể đăng nhập để xem, giám sát và thao tác trên dữ liệu cảm biến
+  - Người dùng quản trị (admin) có thể thêm, xóa, sửa thông tin cảm biến hoặc tài khoản khác
+2. Sensors (Cảm biến)
+- Vai trò: Lưu thông tin cấu hình của các cảm biến trong hệ thống (ví dụ: nhiệt độ, độ ẩm, ánh sáng...)
+- Các cột chính:
+  - sensor_name: Tên của cảm biến (ví dụ: "Nhiệt độ phòng khách")
+  - sensor_type: Loại cảm biến (temperature, humidity, light, v.v.).
+  - unit: Đơn vị đo (°C, %, Lux,...)
+  - location: Vị trí đặt cảm biến (phòng, khu vực...).
+  - description: Mô tả chi tiết cảm biến
+  - created_at: Ngày giờ cảm biến được thêm vào hệ thống
+- Quan hệ:
+  - Mỗi cảm biến có một giá trị hiện tại trong bảng latest_values
+  - Mỗi cảm biến có nhiều giá trị lịch sử trong InfluxDB (cho Grafana hiển thị đồ thị)
+3. Latest_Values (Giá trị mới nhất)
+- Vai trò:
+  - Lưu giá trị cảm biến mới nhất được cập nhật liên tục từ Node-RED.
+  - Mục đích là giúp web hiển thị nhanh giá trị hiện hành mà không phải truy vấn lịch sử dài
+- Các cột chính:
+  - sensor_id: Khóa chính, đồng thời là khóa ngoại liên kết tới bảng sensors(id)
+  - value: Giá trị mới nhất mà cảm biến gửi về
+  - updated_at: Thời điểm cập nhật gần nhất (tự động cập nhật khi có giá trị mới).
+- Quan hệ:
+  - Thuộc về 1 cảm biến (Sensors)
+  - Được Node-RED UPDATE mỗi khi có dữ liệu mới từ cảm biến
+  - Được web SPA đọc để hiển thị giá trị hiện tại lên giao diện người dùng
+4. Logs (Nhật ký hệ thống)
+- Vai trò:
+  - Ghi lại nhật ký hoạt động của hệ thống: thông báo, cảnh báo, hoặc lỗi.
+  - Dùng để kiểm tra và giám sát trạng thái của backend (PHP, Node-RED, sensor...)
+- Các cột chính:
+  - message: Nội dung log (thông điệp hoặc mô tả lỗi)
+  - level: Mức độ log (INFO, WARN, ERROR)
+  - created_at: Thời điểm ghi log
+- Quan hệ:
+  - Có thể được tạo bởi PHP (khi người dùng đăng nhập sai, lỗi DB...) hoặc Node-RED (khi ghi dữ liệu cảm biến, gặp lỗi kết nối...)
+  - Dữ liệu log có thể được admin xem để chẩn đoán sự cố hệ thống
